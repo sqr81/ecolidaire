@@ -12,7 +12,7 @@ require_once __DIR__ . "/../../layout/header.php";
     <form method="post" action="update-query.php">
         <div class="form-group">
             <label>Libellé</label>
-            <input type="text" name="label" maxlength="255" value="<?= $category["label"]; ?>" class="form-control" placeholder="Libellé" required>
+            <input type="text" name="label" maxlength="255" value="<?= htmlspecialchars($category["label"]); ?>" class="form-control" placeholder="Libellé" required>
         </div>
         <input type="hidden" name="id" value="<?= $category["id"]; ?>">
         <button type="submit" class="btn btn-success">
