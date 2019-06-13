@@ -233,7 +233,16 @@ function getUserByEmailPassword(string $email, string $password) {
     }
 }
 
+function deleteRow(string $table, int $id) {
+    global $connection;
 
+    $query = "DELETE FROM $table WHERE id = :id";
+
+    $stmt = $connection->prepare($query);
+    $stmt->bindParam(":id", $id);
+
+    return $stmt->execute();
+}
 
 
 
