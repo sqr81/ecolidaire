@@ -28,7 +28,7 @@ function getAllRows(string $table, array $conditions = [], int $limit = 0) : arr
 
     // ["project_id" => 2, "date_start" => "2019-06-15"]
     $query .= " WHERE 1 = 1";
-    foreach ($conditions as $key => $value) {jx
+    foreach ($conditions as $key => $value) {
         $query .= " AND $key = :$key";
     }
 
@@ -144,6 +144,40 @@ function getAllProjectsByCategory(int $id) : array {
     return $stmt->fetchAll();
 }
 
+function searchProjects(string $search, ?int $categoryId) : array {
+    global $connection;
+
+    $query = "
+        SELECT
+            project.*,
+            DATE_FORMAT(project.date_start, '%d/%m/%Y') AS date_start_format,
+            category.label AS category,
+            COUNT(phm.member_id) AS nb_members,
+            MATCH(project.title, project.description) AGAINST ('$search') AS score
+        FROM project
+        INNER JOIN category ON project.category_id = category.id
+        LEFT JOIN project_has_member AS phm ON project.id = phm.project_id
+        WHERE 1 = 1
+    ";
+
+    if ($search != "") {
+        $query .= " AND (project.title LIKE '%$search%' OR project.description LIKE '%$search%')";
+    }
+
+    if ($categoryId != null) {
+        $query .= " AND category.id = $categoryId";
+    }
+
+    $query .= " GROUP BY project.id
+                ORDER BY score DESC
+    ";
+
+    $stmt = $connection->prepare($query);
+    $stmt->execute();
+
+    return $stmt->fetchAll();
+}
+
 function insertUser(string $pseudo, string $email, string $password, int $isAdmin = 0) : bool {
     global $connection;
 
@@ -151,6 +185,8 @@ function insertUser(string $pseudo, string $email, string $password, int $isAdmi
         INSERT INTO user (pseudo, email, password, admin)
         VALUES (:pseudo, :email, :password, :admin)
     ";
+
+    $password = password_hash($password, PASSWORD_DEFAULT);
 
     $stmt = $connection->prepare($query);
     $stmt->bindParam(":pseudo", $pseudo);
@@ -160,7 +196,6 @@ function insertUser(string $pseudo, string $email, string $password, int $isAdmi
 
     return $stmt->execute();
 }
-
 
 function insertCategory(string $label) : bool {
     global $connection;
@@ -176,9 +211,27 @@ function insertCategory(string $label) : bool {
     return $stmt->execute();
 }
 
+function getUserByEmailPassword(string $email, string $password) {
+    global $connection;
 
+    $query = "SELECT * FROM user WHERE email = :email";
 
+    $stmt = $connection->prepare($query);
+    $stmt->bindParam(":email", $email);
+    $stmt->execute();
 
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        return false;
+    }
+
+    if (password_verify($password, $user["password"])) {
+        return $user;
+    } else {
+        return false;
+    }
+}
 
 
 
