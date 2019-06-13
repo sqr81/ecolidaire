@@ -233,7 +233,13 @@ function getUserByEmailPassword(string $email, string $password) {
     }
 }
 
-function deleteRow(string $table, int $id) {
+/**
+ * Supprimer une ligne d'une table
+ * @param string $table Nom de la table
+ * @param int $id L'identifiant de la ligne
+ * @return ?int Code erreur ou null
+ */
+function deleteRow(string $table, int $id): ?int {
     global $connection;
 
     $query = "DELETE FROM $table WHERE id = :id";
@@ -241,7 +247,13 @@ function deleteRow(string $table, int $id) {
     $stmt = $connection->prepare($query);
     $stmt->bindParam(":id", $id);
 
-    return $stmt->execute();
+    try {
+        $stmt->execute();
+    } catch (PDOException $exception) {
+        return $exception->getCode();
+    }
+
+    return null;
 }
 
 
